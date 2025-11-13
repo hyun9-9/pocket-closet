@@ -1,0 +1,328 @@
+// Prisma Schema for Pocket Closet
+// 주머니 속 옷장 데이터베이스 구조
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================
+// 사용자 관련
+// ================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 체형 정보
+  bodyInfo BodyInfo?
+
+  // 스타일 선호도
+  stylePreferences StylePreference?
+
+  // 내 옷들
+  clothes MyClothing[]
+
+  // 스타일 조합
+  combinations StyleCombination[]
+
+  // 사용 통계
+  usageStats UserUsageStats?
+
+  @@map("users")
+}
+
+model BodyInfo {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 기본 체형
+  height         Int // cm
+  weight         Int? // kg
+  chest          Int? // 가슴둘레 cm
+  waist          Int // 허리둘레 cm
+  hip            Int? // 엉덩이둘레 cm
+  shoulderWidth  Int? // 어깨너비 cm
+  armLength      Int? // 팔길이 cm
+  legLength      Int? // 다리길이 cm
+  neckCircumference Int? // 목둘레 cm
+
+  // 상의 사이즈 (일반적으로 입는 사이즈)
+  topSize    String? // XS, S, M, L, XL, XXL
+  bottomSize String? // 28, 29, 30, 31...
+  shoeSize   Int? // 250, 255, 260...
+
+  // 체형 타입
+  bodyType String? // 삼각형, 역삼각형, 직사각형, 모래시계
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("body_info")
+}
+
+model StylePreference {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 선호 스타일 (복수 선택 가능, JSON 배열)
+  preferredStyles String[] // ["캐주얼", "미니멀", "스트릿"]
+
+  // 선호 색상
+  preferredColors String[] // ["블랙", "화이트", "네이비"]
+
+  // 선호 브랜드
+  preferredBrands String[]
+
+  // 피하는 스타일
+  avoidedStyles String[]
+
+  // 주요 활동/상황
+  mainActivities String[] // ["출근", "데이트", "운동"]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("style_preferences")
+}
+
+// ================================
+// 옷 카테고리
+// ================================
+
+model ClothingCategory {
+  id          String @id @default(uuid())
+  name        String @unique // "상의", "하의", "아우터", "원피스", "신발", "액세서리"
+  nameEn      String @unique // "top", "bottom", "outer", "dress", "shoes", "accessory"
+  description String?
+
+  // 필수 치수 정보 (JSON)
+  requiredMeasurements Json // { "chest": true, "length": true, "shoulder": false }
+
+  clothes MyClothing[]
+
+  @@map("clothing_categories")
+}
+
+// ================================
+// 내 옷장 (핵심!)
+// ================================
+
+model MyClothing {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   ClothingCategory @relation(fields: [categoryId], references: [id])
+
+  // ========== 기본 정보 ==========
+  name       String // 사용자가 지은 이름 "블랙 후드티"
+  brand      String? // 브랜드명
+  purchaseDate DateTime? // 구매일
+  purchasePrice Int? // 구매가격
+  purchaseUrl String? // 구매처 URL
+
+  // ========== 이미지 (핵심!) ==========
+  // 모든 이미지는 URL (Supabase Storage 또는 Cloudinary)
+  originalImage    String // 원본 사진
+  processedImage   String? // 배경 제거된 이미지
+  frontViewImage   String? // 정면 이미지 (Gemini 생성)
+  sideViewImage    String? // 측면 이미지
+  backViewImage    String? // 후면 이미지
+  thumbnailImage   String? // 썸네일 (128x128)
+
+  // ========== AI 추출 메타데이터 (초상세!) ==========
+  
+  // 1. 비주얼 속성
+  primaryColor   String // 주요 색상 "블랙", HEX: "#000000"
+  secondaryColor String? // 보조 색상
+  colorHex       String // HEX 코드
+  pattern        String // "무지", "스트라이프", "체크", "도트", "플로럴"
+  texture        String? // "부드러움", "거침", "광택", "매트"
+  silhouette     String? // "슬림핏", "레귤러핏", "오버핏", "루즈핏"
+  details        String[] // ["후드", "지퍼", "포켓"]
+
+  // 2. 재질 정보
+  material       String // "코튼", "폴리에스터", "데님", "니트", "실크"
+  materialWeight String? // "두꺼움", "보통", "얇음"
+  stretch        String? // "신축성 높음", "보통", "없음"
+  transparency   String? // "불투명", "약간 비침", "비침"
+  formality      Int // 격식도 1-10 (1=운동복, 10=정장)
+
+  // 3. 스타일 속성
+  style          String[] // ["캐주얼", "스트릿", "미니멀"]
+  mood           String[] // ["편안한", "세련된", "유니크한"]
+  season         String[] // ["봄", "여름", "가을", "겨울", "사계절"]
+  occasion       String[] // ["일상", "출근", "데이트", "운동", "파티"]
+
+  // 4. 조합 규칙 (JSON - AI가 생성)
+  matchingRules  Json
+  // {
+  //   "goodWith": {
+  //     "colors": ["화이트", "그레이", "베이지"],
+  //     "patterns": ["무지", "스트라이프"],
+  //     "styles": ["캐주얼", "미니멀"]
+  //   },
+  //   "avoidWith": {
+  //     "colors": ["브라운"],
+  //     "patterns": ["체크"],
+  //     "styles": []
+  //   }
+  // }
+
+  // ========== 치수 정보 ==========
+  measurements   Json
+  // 상의: { chest: 100, length: 70, shoulder: 45, sleeve: 60 }
+  // 하의: { waist: 80, hip: 95, length: 100, thigh: 60 }
+  // 신발: { size: 260, width: "보통" }
+
+  // ========== 사용 통계 ==========
+  wearCount      Int @default(0) // 착용 횟수
+  lastWornDate   DateTime? // 마지막 착용일
+  rating         Float? // 사용자 평점 1-5
+  tags           String[] // 사용자 태그 ["즐겨찾기", "여름", "출근룩"]
+
+  // 메타
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // 관계
+  combinationItems CombinationItem[]
+  pairings1        ClothingPair[] @relation("clothing1")
+  pairings2        ClothingPair[] @relation("clothing2")
+
+  @@index([userId, categoryId])
+  @@map("my_clothes")
+}
+
+// ================================
+// 스타일 조합
+// ================================
+
+model StyleCombination {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String // "데이트 룩 #1"
+  description String? // "로맨틱하고 편안한 봄 데이트 코디"
+  occasion    String // "데이트", "출근", "운동"
+  season      String? // "봄", "여름"
+
+  // 시각화 이미지 (Gemini가 생성한 합성 이미지)
+  visualizationImage String?
+
+  // AI 추천 여부
+  isAiRecommended Boolean @default(false)
+
+  // 평점 & 피드백
+  rating      Float? // 1-5
+  feedback    String? // 사용자 피드백
+
+  // 사용 통계
+  usedCount   Int @default(0)
+  lastUsedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 이 조합에 포함된 옷들
+  items       CombinationItem[]
+
+  @@index([userId])
+  @@map("style_combinations")
+}
+
+model CombinationItem {
+  id            String           @id @default(uuid())
+  combinationId String
+  combination   StyleCombination @relation(fields: [combinationId], references: [id], onDelete: Cascade)
+  clothingId    String
+  clothing      MyClothing       @relation(fields: [clothingId], references: [id], onDelete: Cascade)
+
+  layer         Int // 레이어 순서 (1=속옷, 2=셔츠, 3=아우터)
+
+  @@unique([combinationId, clothingId])
+  @@map("combination_items")
+}
+
+// ================================
+// 옷 궁합 통계 (학습용)
+// ================================
+
+model ClothingPair {
+  id         String @id @default(uuid())
+  
+  clothing1Id String
+  clothing1   MyClothing @relation("clothing1", fields: [clothing1Id], references: [id], onDelete: Cascade)
+  
+  clothing2Id String
+  clothing2   MyClothing @relation("clothing2", fields: [clothing2Id], references: [id], onDelete: Cascade)
+
+  // 통계
+  usedTogether Int @default(1) // 함께 사용된 횟수
+  avgRating    Float? // 평균 평점
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clothing1Id, clothing2Id])
+  @@index([clothing1Id])
+  @@index([clothing2Id])
+  @@map("clothing_pairs")
+}
+
+// ================================
+// 사용자 활동 통계
+// ================================
+
+model UserUsageStats {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // API 사용량
+  totalApiCalls      Int @default(0)
+  monthlyApiCalls    Int @default(0)
+  lastMonthReset     DateTime @default(now())
+
+  // 기능별 사용
+  clothingRegistrations Int @default(0) // 옷 등록 횟수
+  aiRecommendations     Int @default(0) // AI 추천 사용
+  avatarFittings        Int @default(0) // 아바타 피팅
+  realTimeEdits         Int @default(0) // 실시간 편집
+
+  // 총 비용 (추적용)
+  totalCostUSD       Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_usage_stats")
+}
+
+// ================================
+// 캐싱 (선택적, Redis 대신 DB 사용 시)
+// ================================
+
+model CacheEntry {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("cache_entries")
+}
