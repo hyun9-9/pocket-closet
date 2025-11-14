@@ -1,15 +1,11 @@
 // src/server.ts
 import express, { Application } from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 
 // 라우트
-import authRoutes from './routes/auth.routes';
-import clothingRoutes from './routes/clothing.routes';
-import combinationRoutes from './routes/combination.routes';
-import userRoutes from './routes/user.routes';
+import apiRoutes from './routes/index';
 
 // 미들웨어
 import { errorHandler } from './middleware/error.middleware';
@@ -25,9 +21,6 @@ const PORT = process.env.PORT || 3001;
 // ================================
 // 미들웨어 설정
 // ================================
-
-// 보안 헤더
-app.use(helmet());
 
 // CORS 설정
 app.use(cors({
@@ -50,19 +43,8 @@ if (process.env.NODE_ENV === 'development') {
 // 라우트 설정
 // ================================
 
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV 
-  });
-});
-
 // API 라우트
-app.use('/api/auth', authRoutes);
-app.use('/api/clothing', clothingRoutes);
-app.use('/api/combinations', combinationRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api', apiRoutes);
 
 // 404 핸들러
 app.use((req, res) => {

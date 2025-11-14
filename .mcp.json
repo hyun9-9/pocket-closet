@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "vibe-check": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\bss\\pocket-closet\\vibe-check-mcp-server\\build\\index.js"
+      ],
+      "env": {
+        "GEMINI_API_KEY": "AIzaSyCgy7d1mlkXwnl0ouT3suS2vEhSI10Y6c0",
+        "MCP_TRANSPORT": "stdio"
+      }
+    },
+    "linear-server": {
+      "type": "sse",
+      "url": "https://mcp.linear.app/sse"
+    }
+  }
+}

@@ -23,13 +23,10 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
-    "redis": "^5.9.0",
-    "sharp": "^0.34.5",
-    "zod": "^4.1.12"
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -39,7 +36,6 @@
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.10.1",
-    "@types/redis": "^4.0.10",
     "nodemon": "^3.1.11",
     "prisma": "^6.19.0",
     "ts-node": "^10.9.2",
