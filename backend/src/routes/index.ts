@@ -1,6 +1,7 @@
 // src/routes/index.ts
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth.middleware';
+import authRoutes from './auth.routes';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ router.get('/health', (req, res) => {
 });
 
 // TODO: 라우트 추가
-// router.use('/auth', authRoutes);
+router.use('/auth', authRoutes);
 // router.use('/clothing', authenticateToken, clothingRoutes);
 // router.use('/recommendations', authenticateToken, recommendationRoutes);
 
