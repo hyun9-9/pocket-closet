@@ -230,3 +230,5 @@ Run `npm run prisma:studio` in backend to visually inspect the database.
 **See README_MVP.md for detailed implementation checklist**
 
 한국인을 고려하고 한국어로 답변이나 등록을 해야함
+
+공부할수있게 이건 왜 사용하고 어떻게 동작하는지 직접해볼수있있게 지도 해줘
