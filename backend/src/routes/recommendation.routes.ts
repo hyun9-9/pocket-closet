@@ -9,7 +9,13 @@ const router = Router();
  * GET /api/recommendations/style
  * 스타일 추천 조합 생성 (인증 필요)
  *
- * 사용자의 옷장 데이터를 분석해서 최고의 스타일링 조합 3가지를 AI가 추천합니다.
+ * 사용자의 옷장 데이터를 분석해서 AI가 추천하는 스타일링 조합을 반환합니다.
+ *
+ * Query Parameters:
+ * - count: 추천 개수 (기본값: 1, 최소: 1, 최대: 10)
+ *   예: ?count=3 → 추천 3개
+ *       ?count=5 → 추천 5개
+ *       (파라미터 없음) → 기본 1개
  *
  * 평가 기준:
  * 1. 색상 조화 (모노톤, 보색, 인접색)
@@ -22,17 +28,31 @@ const router = Router();
  * Headers:
  * Authorization: Bearer {token}
  *
+ * 사용 예시:
+ * GET /api/recommendations/style
+ * → 기본 1개 추천
+ *
+ * GET /api/recommendations/style?count=1
+ * → 1개 추천
+ *
+ * GET /api/recommendations/style?count=3
+ * → 3개 추천
+ *
+ * GET /api/recommendations/style?count=10
+ * → 최대 10개 추천
+ *
  * Response (200 OK):
  * {
  *   "success": true,
  *   "message": "스타일 추천 생성 완료",
  *   "data": {
  *     "totalClothes": 10,
+ *     "requestedCount": 1,
  *     "recommendations": [
  *       {
  *         "rank": 1,
  *         "score": 9.5,
- *         "reason": "모노톤 조합으로 세련되고 캐주얼 스타일 통일...",
+ *         "reason": "모노톤 조합으로 세련되고 캐주얼 스타일이 통일...",
  *         "combination": [
  *           {
  *             "id": "clothing-id-1",
@@ -56,18 +76,6 @@ const router = Router();
  *             "style": ["캐주얼"]
  *           }
  *         ]
- *       },
- *       {
- *         "rank": 2,
- *         "score": 8.5,
- *         "reason": "중성적 색감으로 포멀한 느낌...",
- *         "combination": [...]
- *       },
- *       {
- *         "rank": 3,
- *         "score": 7.5,
- *         "reason": "현대적 스포츠웨어 믹스...",
- *         "combination": [...]
  *       }
  *     ]
  *   }

@@ -9,10 +9,16 @@ const apiKey = process.env.GOOGLE_AI_API_KEY;
 export class RecommendationService {
   /**
    * 스타일 추천 생성
-   * 사용자의 옷 데이터를 분석해서 최고의 조합 3가지 추천
+   * 사용자의 옷 데이터를 분석해서 최고의 조합 추천
+   *
+   * @param userId 사용자 ID
+   * @param count 추천 개수 (기본값: 1, 최대: 10)
    */
-  static async getStyleRecommendations(userId: string): Promise<any> {
+  static async getStyleRecommendations(userId: string, count: number = 1): Promise<any> {
     try {
+      // 파라미터 검증
+      const validatedCount = this.validateRecommendationCount(count);
+
       // 1️⃣ 사용자의 모든 옷 조회
       const clothes = await this.getUserClothes(userId);
 
@@ -25,7 +31,7 @@ export class RecommendationService {
       }
 
       // 2️⃣ AI 프롬프트 생성
-      const prompt = this.generateRecommendationPrompt(clothes);
+      const prompt = this.generateRecommendationPrompt(clothes, validatedCount);
 
       // 3️⃣ Google Gemini AI로 추천 생성
       const recommendations = await this.generateRecommendationsWithAI(prompt);
@@ -33,15 +39,50 @@ export class RecommendationService {
       // 4️⃣ 의류 ID로 매핑
       const mappedRecommendations = this.mapClothingIds(recommendations, clothes);
 
+      // 5️⃣ 요청한 개수만큼 반환
+      const slicedRecommendations = mappedRecommendations.slice(0, validatedCount);
+
       return {
         totalClothes: clothes.length,
-        recommendations: mappedRecommendations,
+        requestedCount: validatedCount,
+        recommendations: slicedRecommendations,
       };
     } catch (error) {
       if (error instanceof CustomError) throw error;
       console.error('추천 생성 오류:', error);
       throw new CustomError('스타일 추천 생성 중 오류가 발생했습니다', 500);
     }
+  }
+
+  /**
+   * 추천 개수 검증 및 정규화
+   *
+   * @param count 요청한 개수
+   * @returns 검증된 개수 (1-10)
+   */
+  private static validateRecommendationCount(count: any): number {
+    // 기본값: 1
+    if (count === undefined || count === null) {
+      return 1;
+    }
+
+    // 숫자로 변환
+    const parsedCount = parseInt(String(count), 10);
+
+    // 유효하지 않은 숫자면 기본값
+    if (isNaN(parsedCount)) {
+      return 1;
+    }
+
+    // 범위 제한 (1-10)
+    if (parsedCount < 1) {
+      return 1;
+    }
+    if (parsedCount > 10) {
+      return 10;
+    }
+
+    return parsedCount;
   }
 
   /**
@@ -77,8 +118,11 @@ export class RecommendationService {
   /**
    * AI 프롬프트 생성
    * 옷 데이터를 정리해서 AI에게 보낼 프롬프트 작성
+   *
+   * @param clothes 의류 배열
+   * @param count 요청한 추천 개수
    */
-  private static generateRecommendationPrompt(clothes: any[]): string {
+  private static generateRecommendationPrompt(clothes: any[], count: number): string {
     const clothingList = clothes
       .map(
         (c, idx) =>
@@ -89,7 +133,7 @@ export class RecommendationService {
     const prompt = `
 당신은 국제적 패션 스타일리스트입니다.
 
-다음 사용자의 옷장 데이터를 분석해서 최고의 스타일링 조합 3가지를 추천해주세요.
+다음 사용자의 옷장 데이터를 분석해서 최고의 스타일링 조합 ${count}가지를 추천해주세요.
 
 【사용자 옷장】
 ${clothingList}
@@ -124,24 +168,15 @@ ${clothingList}
 응답은 반드시 다음 JSON 형식이어야 합니다:
 {
   "recommendations": [
-    {
-      "rank": 1,
+${Array.from({ length: count }, (_, i) => {
+  const rank = i + 1;
+  return `    {
+      "rank": ${rank},
       "combination": ["옷이름1", "옷이름2", "옷이름3"],
-      "score": 9.5,
+      "score": ${(10 - rank * 0.5).toFixed(1)},
       "reason": "이유 설명 (색상 조화, 스타일 통일감, 패턴 균형 등을 구체적으로)"
-    },
-    {
-      "rank": 2,
-      "combination": ["옷이름1", "옷이름2", "옷이름3"],
-      "score": 8.5,
-      "reason": "이유 설명"
-    },
-    {
-      "rank": 3,
-      "combination": ["옷이름1", "옷이름2", "옷이름3"],
-      "score": 7.5,
-      "reason": "이유 설명"
-    }
+    }${i < count - 1 ? ',' : ''}`;
+}).join('\n')}
   ]
 }
 

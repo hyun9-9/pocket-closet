@@ -10,7 +10,10 @@ type RequestWithUser = Omit<Request, 'user'> & {
 export class RecommendationController {
   /**
    * GET /api/recommendations/style
-   * 스타일 추천 조합 3가지 생성
+   * 스타일 추천 조합 생성
+   *
+   * Query Parameters:
+   * - count: 추천 개수 (기본값: 1, 범위: 1-10)
    */
   static async getStyleRecommendations(
     req: RequestWithUser,
@@ -19,8 +22,9 @@ export class RecommendationController {
   ) {
     try {
       const userId = req.userId!; // 미들웨어에서 주입됨
+      const count = req.query.count ? parseInt(String(req.query.count), 10) : 1;
 
-      const result = await RecommendationService.getStyleRecommendations(userId);
+      const result = await RecommendationService.getStyleRecommendations(userId, count);
 
       res.status(200).json({
         success: true,
