@@ -290,4 +290,88 @@
         throw new CustomError('의류 삭제 중 오류가 발생했습니다', 500);
       }
     }
+
+    /**
+     * 의류 수정
+     */
+    static async updateClothing(
+      clothingId: string,
+      userId: string,
+      updates: any
+    ): Promise<any> {
+      try {
+        // 1️⃣ 기존 의류 존재 여부 확인
+        const clothing = await prisma.myClothing.findFirst({
+          where: {
+            id: clothingId,
+            userId, // 자신의 옷만 수정 가능
+          },
+        });
+
+        if (!clothing) {
+          throw new CustomError('의류를 찾을 수 없습니다', 404);
+        }
+
+        // 2️⃣ 업데이트 가능한 필드 필터링
+        const allowedFields = [
+          'name',
+          'brand',
+          'purchaseDate',
+          'purchasePrice',
+          'purchaseUrl',
+          'primaryColor',
+          'secondaryColor',
+          'colorHex',
+          'pattern',
+          'texture',
+          'silhouette',
+          'details',
+          'material',
+          'materialWeight',
+          'stretch',
+          'transparency',
+          'formality',
+          'style',
+          'mood',
+          'season',
+          'occasion',
+          'wearCount',
+          'lastWornDate',
+          'rating',
+          'tags',
+        ];
+
+        const filteredUpdates: any = {};
+        Object.entries(updates).forEach(([key, value]) => {
+          if (allowedFields.includes(key) && value !== undefined) {
+            filteredUpdates[key] = value;
+          }
+        });
+
+        // 3️⃣ 데이터베이스 업데이트
+        const updatedClothing = await prisma.myClothing.update({
+          where: { id: clothingId },
+          data: filteredUpdates,
+        });
+
+        // 4️⃣ 응답 반환
+        return {
+          id: updatedClothing.id,
+          name: updatedClothing.name,
+          brand: updatedClothing.brand,
+          primaryColor: updatedClothing.primaryColor,
+          metadata: {
+            pattern: updatedClothing.pattern,
+            material: updatedClothing.material,
+            style: updatedClothing.style,
+            season: updatedClothing.season,
+            occasion: updatedClothing.occasion,
+          },
+          updatedAt: updatedClothing.updatedAt,
+        };
+      } catch (error) {
+        if (error instanceof CustomError) throw error;
+        throw new CustomError('의류 수정 중 오류가 발생했습니다', 500);
+      }
+    }
   }

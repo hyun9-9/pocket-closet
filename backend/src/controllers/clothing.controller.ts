@@ -144,4 +144,38 @@ export class ClothingController {
       next(error);
     }
   }
+
+  /**
+   * PATCH /api/clothing/:id
+   * 의류 정보 수정
+   */
+  static async updateClothing(
+    req: RequestWithFile,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { id } = req.params;
+      const userId = req.userId!; // 미들웨어에서 주입됨
+      const updates = req.body;
+
+      // 최소한 하나의 필드가 있는지 확인
+      if (!updates || Object.keys(updates).length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: '수정할 정보가 없습니다',
+        });
+      }
+
+      const result = await ClothingService.updateClothing(id, userId, updates);
+
+      res.status(200).json({
+        success: true,
+        message: '의류 정보 수정 완료',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
