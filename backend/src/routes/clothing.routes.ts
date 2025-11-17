@@ -119,6 +119,57 @@ router.get('/', authenticateToken, ClothingController.getClothing);
 router.get('/:id', authenticateToken, ClothingController.getClothingById);
 
 /**
+ * PATCH /api/clothing/:id
+ * 의류 정보 수정 (인증 필요)
+ *
+ * Headers:
+ * Authorization: Bearer {token}
+ * Content-Type: application/json
+ *
+ * Request Body (모두 선택):
+ * {
+ *   "name": "수정된 이름",
+ *   "brand": "Nike",
+ *   "purchaseDate": "2024-01-15",
+ *   "purchasePrice": 50000,
+ *   "purchaseUrl": "https://...",
+ *   "primaryColor": "검정",
+ *   "colorHex": "#000000",
+ *   "pattern": "무지",
+ *   "material": "코튼",
+ *   "style": ["캐주얼", "스트릿"],
+ *   "season": ["봄", "가을"],
+ *   "occasion": ["일상", "출근"],
+ *   "formality": 3,
+ *   "wearCount": 5,
+ *   "lastWornDate": "2024-11-14",
+ *   "rating": 4.5,
+ *   "tags": ["즐겨찾기", "봄옷"]
+ * }
+ *
+ * Response (200 OK):
+ * {
+ *   "success": true,
+ *   "message": "의류 정보 수정 완료",
+ *   "data": {
+ *     "id": "clothing-123",
+ *     "name": "수정된 이름",
+ *     "brand": "Nike",
+ *     "primaryColor": "검정",
+ *     "metadata": {
+ *       "pattern": "무지",
+ *       "material": "코튼",
+ *       "style": ["캐주얼", "스트릿"],
+ *       "season": ["봄", "가을"],
+ *       "occasion": ["일상", "출근"]
+ *     },
+ *     "updatedAt": "2024-11-17T..."
+ *   }
+ * }
+ */
+router.patch('/:id', authenticateToken, ClothingController.updateClothing);
+
+/**
  * DELETE /api/clothing/:id
  * 의류 삭제 (인증 필요)
  *
