@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { AxiosError } from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { apiClient } from '../services/api';
 
@@ -131,13 +132,18 @@ export function RegisterPage() {
 
       // 4️⃣ 회원가입 성공 → 대시보드로 이동
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err) {
       // 에러 처리
       // 백엔드에서 "이미 존재하는 이메일" 같은 에러 메시지 반환
-      const errorMessage =
-        err.response?.data?.message || '회원가입 실패. 다시 시도해주세요.';
-      setError(errorMessage);
-      console.error('회원가입 오류:', err);
+      if (err instanceof AxiosError) {
+        const errorMessage =
+          err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          '회원가입 실패. 다시 시도해주세요.';
+        setError(errorMessage);
+      } else {
+        setError('예상치 못한 오류가 발생했습니다.');
+      }
     } finally {
       setIsLoading(false); // 로딩 끝
     }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { AxiosError } from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { apiClient } from '../services/api';
 
@@ -87,12 +88,18 @@ export function LoginPage() {
 
       // 4️⃣ 로그인 성공 → 대시보드로 이동
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err) {
       // 에러 처리
-      // Axios 에러는 response.data.message 구조
-      const errorMessage = err.response?.data?.message || '로그인 실패. 다시 시도해주세요.';
-      setError(errorMessage);
-      console.error('로그인 오류:', err);
+      // Axios 에러는 response.data.error.message 또는 response.data.message 구조
+      if (err instanceof AxiosError) {
+        const errorMessage =
+          err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          '로그인 실패. 다시 시도해주세요.';
+        setError(errorMessage);
+      } else {
+        setError('예상치 못한 오류가 발생했습니다.');
+      }
     } finally {
       setIsLoading(false); // 로딩 끝
     }
