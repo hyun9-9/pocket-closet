@@ -32,6 +32,7 @@ export function UploadPage() {
   const [preview, setPreview] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [uploadedItem, setUploadedItem] = useState<any>(null);
 
   // 📋 폼 필드
@@ -223,11 +224,6 @@ export function UploadPage() {
       // 응답 구조: { success, message, data: { id, name, primaryColor, metadata: { ... } } }
       console.log('업로드 성공:', response);
       setUploadedItem(response.data);
-
-      // 4️⃣ 성공 메시지 표시 (2초 후 옷장으로 이동)
-      setTimeout(() => {
-        navigate('/wardrobe');
-      }, 2000);
     } catch (err) {
       // 에러 처리
       if (err instanceof AxiosError) {
@@ -275,26 +271,129 @@ export function UploadPage() {
             </p>
 
             {/* 📊 AI 분석 결과 */}
-            <div className="bg-gray-50 rounded-lg p-4 text-left mb-4 text-sm">
-              <p className="mb-2">
-                <span className="font-semibold">색상:</span> {uploadedItem.primaryColor}
-              </p>
-              <p className="mb-2">
-                <span className="font-semibold">패턴:</span> {uploadedItem.pattern}
-              </p>
-              <p className="mb-2">
-                <span className="font-semibold">스타일:</span>{' '}
-                {uploadedItem.style?.join(', ')}
-              </p>
-              <p>
-                <span className="font-semibold">시즌:</span>{' '}
-                {uploadedItem.season?.join(', ')}
-              </p>
+            <div className="bg-gray-50 rounded-lg p-6 text-left mb-6 text-sm space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                  주요 색상
+                </p>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full border-2 border-gray-300"
+                    style={{
+                      backgroundColor: uploadedItem.primaryColor || '#808080'
+                    }}
+                  />
+                  <span className="font-semibold text-gray-800">
+                    {uploadedItem.primaryColor}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-3">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                  재질
+                </p>
+                <p className="font-semibold text-gray-800">
+                  {uploadedItem.metadata?.material || uploadedItem.material || '-'}
+                </p>
+              </div>
+
+              <div className="border-t border-gray-200 pt-3">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                  패턴
+                </p>
+                <p className="font-semibold text-gray-800">
+                  {uploadedItem.pattern}
+                </p>
+              </div>
+
+              <div className="border-t border-gray-200 pt-3">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                  스타일
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {uploadedItem.metadata?.style?.map((s: string) => (
+                    <span
+                      key={s}
+                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
+                    >
+                      {s}
+                    </span>
+                  )) || uploadedItem.style?.map((s: string) => (
+                    <span
+                      key={s}
+                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-3">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                  시즌
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {uploadedItem.metadata?.season?.map((s: string) => (
+                    <span
+                      key={s}
+                      className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"
+                    >
+                      {s}
+                    </span>
+                  )) || uploadedItem.season?.map((s: string) => (
+                    <span
+                      key={s}
+                      className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {(uploadedItem.metadata?.occasion || uploadedItem.occasion) && (
+                <div className="border-t border-gray-200 pt-3">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                    활용 용도
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {uploadedItem.metadata?.occasion?.map((o: string) => (
+                      <span
+                        key={o}
+                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                      >
+                        {o}
+                      </span>
+                    )) || uploadedItem.occasion?.map((o: string) => (
+                      <span
+                        key={o}
+                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                      >
+                        {o}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <p className="text-gray-500 text-sm">
-              2초 후 옷장으로 이동됩니다...
-            </p>
+            {/* 🔘 버튼 */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleReset}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition"
+              >
+                추가 등록하기
+              </button>
+              <button
+                onClick={() => navigate('/wardrobe')}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg transition"
+              >
+                옷장으로 이동
+              </button>
+            </div>
           </div>
         </div>
       </div>
