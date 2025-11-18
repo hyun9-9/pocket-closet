@@ -5,6 +5,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { UploadPage } from './pages/UploadPage';
 import { WardrobePage } from './pages/WardrobePage';
+import { RecommendationsPage } from './pages/RecommendationsPage';
 
 /**
  * App.tsx - 루트 컴포넌트
@@ -95,6 +96,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <WardrobePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recommendations"
+          element={
+            <ProtectedRoute>
+              <RecommendationsPage />
             </ProtectedRoute>
           }
         />

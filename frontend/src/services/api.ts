@@ -114,8 +114,9 @@ class ApiClient {
   }
 
   // 추천
-  async getRecommendations(occasion: string) {
-    const res = await this.client.post('/recommendations/style', { occasion });
+  async getRecommendations(count: number = 1) {
+    const queryString = count > 1 ? `?count=${count}` : '';
+    const res = await this.client.get(`/recommendations/style${queryString}`);
     return res.data;
   }
 }
