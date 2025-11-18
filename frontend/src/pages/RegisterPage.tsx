@@ -122,7 +122,8 @@ export function RegisterPage() {
       const response = await apiClient.register(name, email, password);
 
       // 2️⃣ 응답 구조: ApiResponse<{ token: string, user: User }>
-      const { token, user: userData } = response.data.data;
+      // apiClient.register() 반환값: { success, message, data: { token, user } }
+      const { token, user: userData } = response.data;
 
       // 3️⃣ Zustand 전역 상태에 저장
       setToken(token);
@@ -175,6 +176,7 @@ export function RegisterPage() {
               onChange={(e) => setName(e.target.value)}
               placeholder="홍길동"
               disabled={isLoading}
+              autoComplete="name"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -191,6 +193,7 @@ export function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               disabled={isLoading}
+              autoComplete="email"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -207,6 +210,7 @@ export function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               disabled={isLoading}
+              autoComplete="new-password"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -223,6 +227,7 @@ export function RegisterPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               disabled={isLoading}
+              autoComplete="new-password"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed"
             />
           </div>

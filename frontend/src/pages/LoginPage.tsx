@@ -76,8 +76,9 @@ export function LoginPage() {
       const response = await apiClient.login(email, password);
 
       // 2️⃣ 응답 구조: ApiResponse<{ token: string, user: User }>
-      // response.data = { success, message, data: { token, user } }
-      const { token, user: userData } = response.data.data;
+      // apiClient.login() 반환값: { success, message, data: { token, user } }
+      // (res.data를 이미 반환하므로 response.data가 아니라 response.data로 접근)
+      const { token, user: userData } = response.data;
 
       // 3️⃣ Zustand 전역 상태에 저장
       // 이렇게 저장하면 Axios 인터셉터가 자동으로 Authorization 헤더 추가
@@ -130,6 +131,7 @@ export function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               disabled={isLoading}
+              autoComplete="email"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -146,6 +148,7 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               disabled={isLoading}
+              autoComplete="current-password"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-gray-50 disabled:cursor-not-allowed"
             />
           </div>
