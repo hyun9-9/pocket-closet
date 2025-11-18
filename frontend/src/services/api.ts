@@ -52,7 +52,11 @@ class ApiClient {
   async uploadClothing(imageFile: File, metadata: any) {
     const formData = new FormData();
     formData.append('image', imageFile);
-    formData.append('metadata', JSON.stringify(metadata));
+    formData.append('name', metadata.name);
+    formData.append('categoryId', metadata.categoryId);
+    if (metadata.brand) {
+      formData.append('brand', metadata.brand);
+    }
 
     const res = await this.client.post('/clothing/upload', formData, {
       headers: {
