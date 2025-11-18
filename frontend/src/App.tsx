@@ -4,6 +4,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { UploadPage } from './pages/UploadPage';
+import { WardrobePage } from './pages/WardrobePage';
 
 /**
  * App.tsx - 루트 컴포넌트
@@ -86,6 +87,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <UploadPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/wardrobe"
+          element={
+            <ProtectedRoute>
+              <WardrobePage />
             </ProtectedRoute>
           }
         />
