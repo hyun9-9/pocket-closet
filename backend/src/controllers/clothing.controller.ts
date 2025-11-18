@@ -83,7 +83,16 @@ export class ClothingController {
 
   /**
    * GET /api/clothing
-   * 사용자의 의류 목록 조회
+   * 사용자의 의류 목록 조회 (필터링 + 페이지네이션)
+   *
+   * 쿼리 파라미터:
+   * - search: 의류 이름 검색
+   * - material: 소재 필터
+   * - primaryColor: 색상 필터
+   * - style: 스타일 필터
+   * - occasion: 용도 필터
+   * - limit: 페이지 크기 (기본값: 12)
+   * - offset: 페이지 오프셋 (기본값: 0)
    */
   static async getClothing(
     req: RequestWithFile,
@@ -93,12 +102,44 @@ export class ClothingController {
     try {
       const userId = req.userId!; // 미들웨어에서 주입됨
 
-      const clothes = await ClothingService.getClothingByUserId(userId);
+      // 1️⃣ 쿼리 파라미터 추출
+      const {
+        search,
+        material,
+        primaryColor,
+        style,
+        occasion,
+        limit = '12',
+        offset = '0',
+      } = req.query;
 
+      // 2️⃣ 타입 변환
+      const parsedLimit = Math.min(parseInt(limit as string) || 12, 100); // 최대 100개
+      const parsedOffset = parseInt(offset as string) || 0;
+
+      // 3️⃣ 필터 객체 구성
+      const filters = {
+        search: search ? (search as string) : undefined,
+        material: material ? (material as string) : undefined,
+        primaryColor: primaryColor ? (primaryColor as string) : undefined,
+        style: style ? (style as string) : undefined,
+        occasion: occasion ? (occasion as string) : undefined,
+      };
+
+      // 4️⃣ Service 호출
+      const result = await ClothingService.getClothingByUserId(
+        userId,
+        filters,
+        parsedLimit,
+        parsedOffset
+      );
+
+      // 5️⃣ 응답
       res.status(200).json({
         success: true,
         message: '의류 목록 조회 성공',
-        data: clothes,
+        data: result.data,
+        pagination: result.pagination,
       });
     } catch (error) {
       next(error);

@@ -231,30 +231,111 @@
     }
 
     /**
-     * 의류 목록 조회
+     * 의류 목록 조회 (필터링 + 페이지네이션)
+     *
+     * @param userId 사용자 ID
+     * @param filters 필터 옵션 {
+     *   search?: string (의류 이름 검색)
+     *   material?: string (소재)
+     *   primaryColor?: string (주요 색상)
+     *   style?: string[] (스타일)
+     *   occasion?: string[] (용도)
+     * }
+     * @param limit 페이지 크기 (기본값: 12)
+     * @param offset 페이지 오프셋 (기본값: 0)
      */
-    static async getClothingByUserId(userId: string): Promise<any[]> {
+    static async getClothingByUserId(
+      userId: string,
+      filters?: {
+        search?: string;
+        material?: string;
+        primaryColor?: string;
+        style?: string;
+        occasion?: string;
+      },
+      limit: number = 12,
+      offset: number = 0
+    ): Promise<{ data: any[]; total: number; pagination: any }> {
       try {
+        // 1️⃣ WHERE 조건 구성
+        const where: any = { userId };
+
+        // 검색 필터
+        if (filters?.search) {
+          where.name = {
+            contains: filters.search,
+            mode: 'insensitive',
+          };
+        }
+
+        // 소재 필터
+        if (filters?.material) {
+          where.material = filters.material;
+        }
+
+        // 색상 필터
+        if (filters?.primaryColor) {
+          where.primaryColor = filters.primaryColor;
+        }
+
+        // 스타일 필터 (배열에 포함된 항목)
+        if (filters?.style) {
+          where.style = {
+            has: filters.style,
+          };
+        }
+
+        // 용도 필터 (배열에 포함된 항목)
+        if (filters?.occasion) {
+          where.occasion = {
+            has: filters.occasion,
+          };
+        }
+
+        // 2️⃣ 전체 개수 조회
+        const total = await prisma.myClothing.count({ where });
+
+        // 3️⃣ 페이지네이션된 데이터 조회
         const clothes = await prisma.myClothing.findMany({
-          where: { userId },
+          where,
           select: {
             id: true,
             name: true,
             brand: true,
             primaryColor: true,
+            colorHex: true,
             pattern: true,
             material: true,
             style: true,
             season: true,
             occasion: true,
             originalImage: true,
+            thumbnailImage: true,
             createdAt: true,
           },
           orderBy: { createdAt: 'desc' },
+          take: limit,
+          skip: offset,
         });
 
-        return clothes;
+        // 4️⃣ 페이지네이션 정보
+        const totalPages = Math.ceil(total / limit);
+        const currentPage = Math.floor(offset / limit) + 1;
+
+        return {
+          data: clothes,
+          total,
+          pagination: {
+            page: currentPage,
+            limit,
+            total,
+            pages: totalPages,
+            hasNextPage: currentPage < totalPages,
+            hasPrevPage: currentPage > 1,
+          },
+        };
       } catch (error) {
+        console.error('의류 목록 조회 오류:', error);
         throw new CustomError('의류 목록 조회 중 오류가 발생했습니다', 500);
       }
     }
