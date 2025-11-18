@@ -34,6 +34,11 @@ export function UploadPage() {
   const [error, setError] = useState('');
   const [uploadedItem, setUploadedItem] = useState<any>(null);
 
+  // 📋 폼 필드
+  const [clothingName, setClothingName] = useState('');
+  const [clothingBrand, setClothingBrand] = useState('');
+  const [categoryId, setCategoryId] = useState('top');
+
   // 🔀 라우팅
   const navigate = useNavigate();
 
@@ -152,15 +157,30 @@ export function UploadPage() {
    * 업로드 처리
    *
    * 🔄 동작 순서:
-   * 1. 파일 검증
-   * 2. FormData 생성 (파일 + 메타데이터)
+   * 1. 필드 검증 (파일, 이름, 카테고리)
+   * 2. 백엔드 API 요구사항 확인:
+   *    - image: File (필수)
+   *    - name: string (필수)
+   *    - categoryId: string (필수)
+   *    - brand: string (선택)
    * 3. apiClient.uploadClothing() 호출
    * 4. 응답 받기 (AI 분석 결과)
    * 5. 성공 시 결과 표시 또는 옷장으로 이동
    */
   const handleUpload = async () => {
+    // 1️⃣ 필수 필드 검증
     if (!selectedFile) {
       setError('파일을 선택해주세요');
+      return;
+    }
+
+    if (!clothingName.trim()) {
+      setError('의류 이름을 입력해주세요');
+      return;
+    }
+
+    if (!categoryId) {
+      setError('카테고리를 선택해주세요');
       return;
     }
 
@@ -168,13 +188,16 @@ export function UploadPage() {
     setError('');
 
     try {
-      // 1️⃣ apiClient.uploadClothing() 호출
-      // 이것은 Axios를 사용한 POST /api/clothing/upload 요청
-      // 파라미터: (imageFile: File, metadata: any)
-      const response = await apiClient.uploadClothing(selectedFile, {});
+      // 2️⃣ apiClient.uploadClothing() 호출
+      // 백엔드 API 요구사항: name, categoryId는 필수, brand는 선택
+      const response = await apiClient.uploadClothing(selectedFile, {
+        name: clothingName.trim(),
+        categoryId,
+        brand: clothingBrand.trim() || undefined,
+      });
 
       // 3️⃣ 응답 처리
-      // 응답 구조: { success, message, data: { id, name, colors, patterns, ... } }
+      // 응답 구조: { success, message, data: { id, name, primaryColor, metadata: { ... } } }
       console.log('업로드 성공:', response);
       setUploadedItem(response.data);
 
@@ -206,6 +229,9 @@ export function UploadPage() {
     setPreview('');
     setError('');
     setUploadedItem(null);
+    setClothingName('');
+    setClothingBrand('');
+    setCategoryId('top');
   };
 
   // ✅ 업로드 성공 표시
@@ -305,7 +331,7 @@ export function UploadPage() {
               </label>
             </div>
           ) : (
-            // 파일 선택 후: 미리보기
+            // 파일 선택 후: 미리보기 + 폼
             <div>
               {/* 🖼️ 이미지 미리보기 */}
               <div className="mb-6">
@@ -327,11 +353,66 @@ export function UploadPage() {
                 </p>
               </div>
 
+              {/* 📋 의류 정보 입력 폼 */}
+              <div className="mb-6 space-y-4">
+                {/* 의류 이름 */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    의류 이름 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={clothingName}
+                    onChange={(e) => setClothingName(e.target.value)}
+                    placeholder="예: 검정 후드집업"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  />
+                  {!clothingName.trim() && error.includes('의류 이름') && (
+                    <p className="text-red-500 text-sm mt-1">{error}</p>
+                  )}
+                </div>
+
+                {/* 브랜드 (선택) */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    브랜드 <span className="text-gray-500 text-xs">(선택사항)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={clothingBrand}
+                    onChange={(e) => setClothingBrand(e.target.value)}
+                    placeholder="예: Nike"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  />
+                </div>
+
+                {/* 카테고리 */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    카테고리 <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-white"
+                  >
+                    <option value="top">상의</option>
+                    <option value="bottom">하의</option>
+                    <option value="outerwear">아우터</option>
+                    <option value="shoes">신발</option>
+                    <option value="accessories">악세서리</option>
+                  </select>
+                  {!categoryId && error.includes('카테고리') && (
+                    <p className="text-red-500 text-sm mt-1">{error}</p>
+                  )}
+                </div>
+              </div>
+
               {/* 🔘 버튼 (업로드 / 재선택) */}
               <div className="flex gap-4">
                 <button
                   onClick={handleUpload}
-                  disabled={isLoading}
+                  disabled={isLoading || !clothingName.trim()}
                   className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-semibold py-3 rounded-lg transition disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
