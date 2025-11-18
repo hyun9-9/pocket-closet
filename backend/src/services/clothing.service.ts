@@ -215,6 +215,22 @@
   }
 
     /**
+     * 카테고리 유효성 검증
+     * categoryId가 실제 데이터베이스에 존재하는지 확인
+     */
+    static async validateCategory(categoryId: string): Promise<boolean> {
+      try {
+        const category = await prisma.clothingCategory.findUnique({
+          where: { id: categoryId },
+        });
+        return !!category;
+      } catch (error) {
+        console.error('카테고리 검증 오류:', error);
+        return false;
+      }
+    }
+
+    /**
      * 의류 목록 조회
      */
     static async getClothingByUserId(userId: string): Promise<any[]> {

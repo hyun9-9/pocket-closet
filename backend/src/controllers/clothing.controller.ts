@@ -50,6 +50,15 @@ export class ClothingController {
         });
       }
 
+      // 4️⃣ categoryId 유효성 검증 (UUID 형식 및 데이터베이스 존재 확인)
+      const categoryExists = await ClothingService.validateCategory(categoryId);
+      if (!categoryExists) {
+        return res.status(400).json({
+          success: false,
+          message: '존재하지 않는 카테고리입니다',
+        });
+      }
+
       // 4️⃣ Service에 위임
       const result = await ClothingService.uploadClothing({
         userId,

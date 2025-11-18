@@ -50,9 +50,9 @@ export function UploadPage() {
       try {
         const response = await apiClient.getCategories();
         setCategories(response.data || []);
-        // 첫 번째 카테고리를 기본값으로 설정
+        // 첫 번째 카테고리를 기본값으로 설정 (UUID id 사용)
         if (response.data && response.data.length > 0) {
-          setCategoryId(response.data[0].nameEn);
+          setCategoryId(response.data[0].id);
         }
       } catch (err) {
         console.error('카테고리 로드 실패:', err);
@@ -254,9 +254,9 @@ export function UploadPage() {
     setUploadedItem(null);
     setClothingName('');
     setClothingBrand('');
-    // 첫 번째 카테고리를 기본값으로 설정
+    // 첫 번째 카테고리를 기본값으로 설정 (UUID id 사용)
     if (categories.length > 0) {
-      setCategoryId(categories[0].nameEn);
+      setCategoryId(categories[0].id);
     }
   };
 
@@ -427,7 +427,7 @@ export function UploadPage() {
                       {categoriesLoading ? '카테고리 로딩 중...' : '카테고리를 선택하세요'}
                     </option>
                     {categories.map((cat) => (
-                      <option key={cat.id} value={cat.nameEn}>
+                      <option key={cat.id} value={cat.id}>
                         {cat.name}
                       </option>
                     ))}
