@@ -77,6 +77,17 @@ class ApiClient {
     return res.data;
   }
 
+  // 카테고리
+  async getCategories() {
+    const res = await this.client.get('/categories');
+    return res.data;
+  }
+
+  async getCategoryById(id: string) {
+    const res = await this.client.get(`/categories/${id}`);
+    return res.data;
+  }
+
   // 추천
   async getRecommendations(occasion: string) {
     const res = await this.client.post('/recommendations/style', { occasion });

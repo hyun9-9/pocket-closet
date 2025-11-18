@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import { apiClient } from '../services/api';
@@ -37,10 +37,33 @@ export function UploadPage() {
   // 📋 폼 필드
   const [clothingName, setClothingName] = useState('');
   const [clothingBrand, setClothingBrand] = useState('');
-  const [categoryId, setCategoryId] = useState('top');
+  const [categoryId, setCategoryId] = useState('');
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; nameEn: string }>>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   // 🔀 라우팅
   const navigate = useNavigate();
+
+  // 🔄 카테고리 로드
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await apiClient.getCategories();
+        setCategories(response.data || []);
+        // 첫 번째 카테고리를 기본값으로 설정
+        if (response.data && response.data.length > 0) {
+          setCategoryId(response.data[0].nameEn);
+        }
+      } catch (err) {
+        console.error('카테고리 로드 실패:', err);
+        setError('카테고리를 불러올 수 없습니다');
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   /**
    * 파일 검증
@@ -231,7 +254,10 @@ export function UploadPage() {
     setUploadedItem(null);
     setClothingName('');
     setClothingBrand('');
-    setCategoryId('top');
+    // 첫 번째 카테고리를 기본값으로 설정
+    if (categories.length > 0) {
+      setCategoryId(categories[0].nameEn);
+    }
   };
 
   // ✅ 업로드 성공 표시
@@ -394,13 +420,17 @@ export function UploadPage() {
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-white"
+                    disabled={categoriesLoading || categories.length === 0}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
-                    <option value="top">상의</option>
-                    <option value="bottom">하의</option>
-                    <option value="outerwear">아우터</option>
-                    <option value="shoes">신발</option>
-                    <option value="accessories">악세서리</option>
+                    <option value="">
+                      {categoriesLoading ? '카테고리 로딩 중...' : '카테고리를 선택하세요'}
+                    </option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.nameEn}>
+                        {cat.name}
+                      </option>
+                    ))}
                   </select>
                   {!categoryId && error.includes('카테고리') && (
                     <p className="text-red-500 text-sm mt-1">{error}</p>
