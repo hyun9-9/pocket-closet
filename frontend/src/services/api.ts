@@ -66,8 +66,29 @@ class ApiClient {
     return res.data;
   }
 
-  async getClothing() {
-    const res = await this.client.get('/clothing');
+  async getClothing(filters?: {
+    search?: string;
+    material?: string;
+    primaryColor?: string;
+    style?: string;
+    occasion?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const params = new URLSearchParams();
+
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.material) params.append('material', filters.material);
+    if (filters?.primaryColor) params.append('primaryColor', filters.primaryColor);
+    if (filters?.style) params.append('style', filters.style);
+    if (filters?.occasion) params.append('occasion', filters.occasion);
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.offset) params.append('offset', filters.offset.toString());
+
+    const queryString = params.toString();
+    const url = queryString ? `/clothing?${queryString}` : '/clothing';
+
+    const res = await this.client.get(url);
     return res.data;
   }
 
