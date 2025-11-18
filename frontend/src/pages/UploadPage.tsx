@@ -1,0 +1,368 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AxiosError } from 'axios';
+import { apiClient } from '../services/api';
+
+/**
+ * UploadPage 컴포넌트
+ *
+ * ✅ 기능:
+ * 1. 드래그 앤 드롭으로 이미지 업로드
+ * 2. 파일 선택 (input file)
+ * 3. 이미지 미리보기
+ * 4. 파일 검증 (타입, 크기)
+ * 5. 업로드 진행률 표시
+ * 6. AI 분석 결과 표시 (색상, 패턴, 스타일 등)
+ * 7. 성공 시 옷장으로 이동
+ *
+ * 💡 핵심 기술:
+ * - HTML5 Drag & Drop API
+ * - FileReader (이미지 미리보기)
+ * - FormData (파일 전송)
+ * - Tailwind CSS (반응형)
+ *
+ * 📐 반응형 디자인:
+ * - 모바일: 전체 너비
+ * - 태블릿+: 최대 600px 중앙 정렬
+ */
+export function UploadPage() {
+  // 📍 상태 관리
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [uploadedItem, setUploadedItem] = useState<any>(null);
+
+  // 🔀 라우팅
+  const navigate = useNavigate();
+
+  /**
+   * 파일 검증
+   *
+   * ✅ 검사 항목:
+   * 1. 파일 타입 (image/jpeg, image/png만 허용)
+   * 2. 파일 크기 (10MB 이하)
+   */
+  const validateFile = (file: File): boolean => {
+    // 파일 타입 검증
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('JPG, PNG, WebP 파일만 업로드 가능합니다');
+      return false;
+    }
+
+    // 파일 크기 검증 (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError('파일 크기는 10MB 이하여야 합니다');
+      return false;
+    }
+
+    return true;
+  };
+
+  /**
+   * 이미지 미리보기 생성
+   *
+   * 🔄 동작:
+   * 1. FileReader 생성
+   * 2. readAsDataURL()로 이미지 읽기
+   * 3. onload 이벤트에서 preview 상태 업데이트
+   */
+  const createPreview = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setPreview(result); // Data URL 저장
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /**
+   * 파일 선택 처리
+   *
+   * 🔄 동작:
+   * 1. 파일 검증
+   * 2. 미리보기 생성
+   * 3. 상태 업데이트
+   */
+  const handleFileSelect = (file: File) => {
+    setError('');
+
+    if (!validateFile(file)) {
+      return;
+    }
+
+    setSelectedFile(file);
+    createPreview(file);
+  };
+
+  /**
+   * 드래그 오버
+   *
+   * 💡 dragover 이벤트:
+   * - preventDefault()로 기본 동작 차단 (파일 열기)
+   * - isDragging으로 UI 업데이트 (시각적 피드백)
+   */
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  /**
+   * 드래그 영역 떠남
+   */
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  /**
+   * 드롭
+   *
+   * 💡 drop 이벤트:
+   * - dataTransfer.files로 파일 접근
+   * - preventDefault()로 기본 동작 차단
+   */
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  /**
+   * 파일 입력 (input file)
+   */
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (files && files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  /**
+   * 업로드 처리
+   *
+   * 🔄 동작 순서:
+   * 1. 파일 검증
+   * 2. FormData 생성 (파일 + 메타데이터)
+   * 3. apiClient.uploadClothing() 호출
+   * 4. 응답 받기 (AI 분석 결과)
+   * 5. 성공 시 결과 표시 또는 옷장으로 이동
+   */
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setError('파일을 선택해주세요');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // 1️⃣ apiClient.uploadClothing() 호출
+      // 이것은 Axios를 사용한 POST /api/clothing/upload 요청
+      // 파라미터: (imageFile: File, metadata: any)
+      const response = await apiClient.uploadClothing(selectedFile, {});
+
+      // 3️⃣ 응답 처리
+      // 응답 구조: { success, message, data: { id, name, colors, patterns, ... } }
+      console.log('업로드 성공:', response);
+      setUploadedItem(response.data);
+
+      // 4️⃣ 성공 메시지 표시 (2초 후 옷장으로 이동)
+      setTimeout(() => {
+        navigate('/wardrobe');
+      }, 2000);
+    } catch (err) {
+      // 에러 처리
+      if (err instanceof AxiosError) {
+        const errorMessage =
+          err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          '업로드 실패. 다시 시도해주세요.';
+        setError(errorMessage);
+      } else {
+        setError('예상치 못한 오류가 발생했습니다.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * 파일 재선택
+   */
+  const handleReset = () => {
+    setSelectedFile(null);
+    setPreview('');
+    setError('');
+    setUploadedItem(null);
+  };
+
+  // ✅ 업로드 성공 표시
+  if (uploadedItem) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <div className="text-6xl mb-4">✅</div>
+            <h2 className="text-2xl font-bold text-green-600 mb-2">
+              업로드 성공!
+            </h2>
+            <p className="text-gray-600 mb-4">
+              <strong>{uploadedItem.name}</strong> 이 옷장에 추가되었습니다.
+            </p>
+
+            {/* 📊 AI 분석 결과 */}
+            <div className="bg-gray-50 rounded-lg p-4 text-left mb-4 text-sm">
+              <p className="mb-2">
+                <span className="font-semibold">색상:</span> {uploadedItem.primaryColor}
+              </p>
+              <p className="mb-2">
+                <span className="font-semibold">패턴:</span> {uploadedItem.pattern}
+              </p>
+              <p className="mb-2">
+                <span className="font-semibold">스타일:</span>{' '}
+                {uploadedItem.style?.join(', ')}
+              </p>
+              <p>
+                <span className="font-semibold">시즌:</span>{' '}
+                {uploadedItem.season?.join(', ')}
+              </p>
+            </div>
+
+            <p className="text-gray-500 text-sm">
+              2초 후 옷장으로 이동됩니다...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* 📋 페이지 제목 */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            의류 업로드
+          </h1>
+          <p className="text-gray-600">
+            새로운 옷 사진을 업로드하세요. AI가 자동으로 분석합니다.
+          </p>
+        </div>
+
+        {/* 🎨 메인 카드 */}
+        <div className="bg-white rounded-lg shadow-xl p-8">
+          {/* ❌ 에러 메시지 (조건부 렌더링) */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* 📸 드래그 앤 드롭 영역 또는 미리보기 */}
+          {!selectedFile ? (
+            // 파일 선택 전: 드래그 앤 드롭 영역
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-lg p-12 text-center transition cursor-pointer ${
+                isDragging
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 bg-gray-50 hover:border-gray-400'
+              }`}
+            >
+              <input
+                type="file"
+                id="file-input"
+                accept="image/*"
+                onChange={handleInputChange}
+                className="hidden"
+              />
+              <label htmlFor="file-input" className="cursor-pointer">
+                <div className="text-4xl mb-3">📸</div>
+                <p className="text-lg font-semibold text-gray-900 mb-1">
+                  이미지를 여기로 드래그하세요
+                </p>
+                <p className="text-sm text-gray-600 mb-4">
+                  또는 클릭하여 파일 선택
+                </p>
+                <p className="text-xs text-gray-500">
+                  JPG, PNG, WebP (최대 10MB)
+                </p>
+              </label>
+            </div>
+          ) : (
+            // 파일 선택 후: 미리보기
+            <div>
+              {/* 🖼️ 이미지 미리보기 */}
+              <div className="mb-6">
+                <img
+                  src={preview}
+                  alt="미리보기"
+                  className="w-full h-80 object-cover rounded-lg"
+                />
+              </div>
+
+              {/* 📝 파일 정보 */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-600 mb-2">
+                  <span className="font-semibold">파일명:</span> {selectedFile.name}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-semibold">크기:</span>{' '}
+                  {(selectedFile.size / 1024).toFixed(2)} KB
+                </p>
+              </div>
+
+              {/* 🔘 버튼 (업로드 / 재선택) */}
+              <div className="flex gap-4">
+                <button
+                  onClick={handleUpload}
+                  disabled={isLoading}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-semibold py-3 rounded-lg transition disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      업로드 중...
+                    </span>
+                  ) : (
+                    '업로드'
+                  )}
+                </button>
+                <button
+                  onClick={handleReset}
+                  disabled={isLoading}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 disabled:bg-gray-200 text-gray-900 font-semibold py-3 rounded-lg transition disabled:cursor-not-allowed"
+                >
+                  재선택
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 💡 팁 */}
+          <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-900">
+              <span className="font-semibold">💡 팁:</span> 옷을 명확하게 촬영하면 AI 분석이
+              더 정확합니다. 배경이 단순하고 조명이 충분한 곳에서 촬영하세요.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
