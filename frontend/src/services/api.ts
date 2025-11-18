@@ -1,5 +1,6 @@
 // src/services/api.ts
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
+import type { AxiosInstance } from 'axios';
 import { useAuthStore } from '../store/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -42,8 +43,8 @@ class ApiClient {
     return res.data;
   }
 
-  async register(email: string, password: string) {
-    const res = await this.client.post('/auth/register', { email, password });
+  async register(name: string, email: string, password: string) {
+    const res = await this.client.post('/auth/register', { name, email, password });
     return res.data;
   }
 
@@ -83,4 +84,5 @@ class ApiClient {
   }
 }
 
+export { ApiClient };
 export const apiClient = new ApiClient();
