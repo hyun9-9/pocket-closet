@@ -77,7 +77,7 @@ export function UploadPage() {
     // 파일 타입 검증
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setError('JPG, PNG, WebP 파일만 업로드 가능합니다');
+      setError('JPG, JPEG, PNG, WebP 파일만 업로드 가능합니다');
       return false;
     }
 
@@ -256,143 +256,197 @@ export function UploadPage() {
     }
   };
 
-  // ✅ 업로드 성공 표시
+  // ✅ 업로드 성공 표시 (상태: analyzing)
   if (uploadedItem) {
+    const isAnalyzing = uploadedItem.status === 'analyzing';
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+      <div className={`min-h-screen bg-gradient-to-br ${
+        isAnalyzing
+          ? 'from-blue-50 to-cyan-100'
+          : 'from-green-50 to-emerald-100'
+      } flex items-center justify-center p-4`}>
         <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
           <div className="text-center">
-            <div className="text-6xl mb-4">✅</div>
-            <h2 className="text-2xl font-bold text-green-600 mb-2">
-              업로드 성공!
-            </h2>
-            <p className="text-gray-600 mb-4">
-              <strong>{uploadedItem.name}</strong> 이 옷장에 추가되었습니다.
-            </p>
-
-            {/* 📊 AI 분석 결과 */}
-            <div className="bg-gray-50 rounded-lg p-6 text-left mb-6 text-sm space-y-3">
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  주요 색상
+            {/* 🔄 분석 중 상태 */}
+            {isAnalyzing ? (
+              <>
+                <h2 className="text-2xl font-bold text-blue-600 mb-2">
+                  분석 중입니다
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  <strong>{uploadedItem.name}</strong>을 AI가 분석 중입니다.
                 </p>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-8 h-8 rounded-full border-2 border-gray-300"
-                    style={{
-                      backgroundColor: uploadedItem.primaryColor || '#808080'
-                    }}
-                  />
-                  <span className="font-semibold text-gray-800">
-                    {uploadedItem.primaryColor}
-                  </span>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-blue-800 mb-2 font-semibold">
+                    📝 업로드 완료!
+                  </p>
+                  <p className="text-xs text-blue-700 mb-3">
+                    이미지가 저장되었습니다. AI 분석은 백그라운드에서 진행 중입니다.
+                  </p>
+                  <ul className="text-xs text-blue-700 space-y-1">
+                    <li>✓ 분석 소요 시간: 10~30초</li>
+                    <li>✓ 옷장 페이지에서 새로고침하면 결과를 확인할 수 있습니다</li>
+                    <li>✓ 정보가 부정확하면 수동으로 편집할 수 있습니다</li>
+                  </ul>
                 </div>
-              </div>
+              </>
+            ) : (
+              <>
+                <div className="text-6xl mb-4">✅</div>
+                <h2 className="text-2xl font-bold text-green-600 mb-2">
+                  업로드 성공!
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  <strong>{uploadedItem.name}</strong> 이 옷장에 추가되었습니다.
+                </p>
+              </>
+            )}
 
-              <div className="border-t border-gray-200 pt-3">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  재질
-                </p>
-                <p className="font-semibold text-gray-800">
-                  {uploadedItem.metadata?.material || uploadedItem.material || '-'}
-                </p>
-              </div>
-
-              <div className="border-t border-gray-200 pt-3">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  패턴
-                </p>
-                <p className="font-semibold text-gray-800">
-                  {uploadedItem.pattern}
-                </p>
-              </div>
-
-              <div className="border-t border-gray-200 pt-3">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  스타일
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {uploadedItem.metadata?.style?.map((s: string) => (
-                    <span
-                      key={s}
-                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
-                    >
-                      {s}
+            {/* 📊 AI 분석 결과 (분석 완료 후만 표시) */}
+            {!isAnalyzing && (
+              <div className="bg-gray-50 rounded-lg p-6 text-left mb-6 text-sm space-y-3">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                    주요 색상
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-full border-2 border-gray-300"
+                      style={{
+                        backgroundColor: uploadedItem.primaryColor || '#808080'
+                      }}
+                    />
+                    <span className="font-semibold text-gray-800">
+                      {uploadedItem.primaryColor}
                     </span>
-                  )) || uploadedItem.style?.map((s: string) => (
-                    <span
-                      key={s}
-                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
-                    >
-                      {s}
-                    </span>
-                  ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className="border-t border-gray-200 pt-3">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  시즌
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {uploadedItem.metadata?.season?.map((s: string) => (
-                    <span
-                      key={s}
-                      className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"
-                    >
-                      {s}
-                    </span>
-                  )) || uploadedItem.season?.map((s: string) => (
-                    <span
-                      key={s}
-                      className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {(uploadedItem.metadata?.occasion || uploadedItem.occasion) && (
                 <div className="border-t border-gray-200 pt-3">
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                    활용 용도
+                    재질
+                  </p>
+                  <p className="font-semibold text-gray-800">
+                    {uploadedItem.metadata?.material || uploadedItem.material || '-'}
+                  </p>
+                </div>
+
+                <div className="border-t border-gray-200 pt-3">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                    패턴
+                  </p>
+                  <p className="font-semibold text-gray-800">
+                    {uploadedItem.pattern}
+                  </p>
+                </div>
+
+                <div className="border-t border-gray-200 pt-3">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                    스타일
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {uploadedItem.metadata?.occasion?.map((o: string) => (
+                    {uploadedItem.metadata?.style?.map((s: string) => (
                       <span
-                        key={o}
-                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                        key={s}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
                       >
-                        {o}
+                        {s}
                       </span>
-                    )) || uploadedItem.occasion?.map((o: string) => (
+                    )) || uploadedItem.style?.map((s: string) => (
                       <span
-                        key={o}
-                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                        key={s}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
                       >
-                        {o}
+                        {s}
                       </span>
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
+
+                <div className="border-t border-gray-200 pt-3">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                    시즌
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {uploadedItem.metadata?.season?.map((s: string) => (
+                      <span
+                        key={s}
+                        className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"
+                      >
+                        {s}
+                      </span>
+                    )) || uploadedItem.season?.map((s: string) => (
+                      <span
+                        key={s}
+                        className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {(uploadedItem.metadata?.occasion || uploadedItem.occasion) && (
+                  <div className="border-t border-gray-200 pt-3">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                      활용 용도
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {uploadedItem.metadata?.occasion?.map((o: string) => (
+                        <span
+                          key={o}
+                          className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                        >
+                          {o}
+                        </span>
+                      )) || uploadedItem.occasion?.map((o: string) => (
+                        <span
+                          key={o}
+                          className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                        >
+                          {o}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 🔘 버튼 */}
             <div className="flex gap-3">
-              <button
-                onClick={handleReset}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition"
-              >
-                추가 등록하기
-              </button>
-              <button
-                onClick={() => navigate('/wardrobe')}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg transition"
-              >
-                옷장으로 이동
-              </button>
+              {isAnalyzing ? (
+                <>
+                  <button
+                    onClick={handleReset}
+                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition"
+                  >
+                    추가 등록하기
+                  </button>
+                  <button
+                    onClick={() => navigate('/wardrobe')}
+                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 rounded-lg transition"
+                  >
+                    옷장으로 이동
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleReset}
+                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition"
+                  >
+                    추가 등록하기
+                  </button>
+                  <button
+                    onClick={() => navigate('/wardrobe')}
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg transition"
+                  >
+                    옷장으로 이동
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -451,7 +505,7 @@ export function UploadPage() {
                   또는 클릭하여 파일 선택
                 </p>
                 <p className="text-xs text-gray-500">
-                  JPG, PNG, WebP (최대 10MB)
+                  JPG, JPEG, PNG, WebP (최대 10MB)
                 </p>
               </label>
             </div>

@@ -70,11 +70,20 @@ export class ClothingController {
         mimeType: req.file.mimetype,
       });
 
-      // 5️⃣ 성공 응답
+      // 5️⃣ 성공 응답 (상태: analyzing)
       res.status(201).json({
         success: true,
-        message: '의류 업로드 및 분석 완료',
+        message: '이미지 저장 완료! AI가 의류를 분석 중입니다.',
         data: result,
+        // 🔥 프론트에서 사용할 수 있는 정보
+        hint: {
+          status: 'analyzing',
+          tips: [
+            'AI 분석은 10초~30초 정도 소요됩니다.',
+            '잠시 후 옷장 페이지에서 새로고침(F5)하면 완전한 정보를 확인할 수 있습니다.',
+            '옷장에서 수동으로 정보를 편집할 수도 있습니다.',
+          ],
+        },
       });
     } catch (error) {
       next(error);
