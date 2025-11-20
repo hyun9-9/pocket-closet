@@ -37,7 +37,7 @@ interface ClothingItem {
 interface Recommendation {
   rank: number;
   score: number;
-  reason: string;
+  reason: string | string[]; // 문자열 또는 배열 모두 지원
   combination: ClothingItem[];
 }
 
@@ -409,7 +409,20 @@ export function RecommendationsPage() {
 
                   {/* AI 설명 */}
                   <div className="bg-white rounded-lg p-4">
-                    <p className="text-gray-700 text-sm leading-relaxed">{rec.reason}</p>
+                    {Array.isArray(rec.reason) ? (
+                      <div className="space-y-2">
+                        {rec.reason.map((reason, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <span className="text-blue-500 font-bold">•</span>
+                            <p className="text-gray-700 text-sm leading-relaxed flex-1">
+                              {reason}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 text-sm leading-relaxed">{rec.reason}</p>
+                    )}
                   </div>
                 </div>
 

@@ -188,21 +188,26 @@ ${savedCombinationsList}
 ${clothingList}${savedCombinationsInfo}
 
 【평가 기준】
+각 조합의 reason 배열에는 다음 항목들을 포함해야 합니다:
+
 1. 색상 조화
    - 모노톤 조합 (검정+회색+흰색): 세련됨
    - 보색 조합 (파랑+주황): 생기있음
    - 인접색 조합 (빨강+주황): 따뜻함
    - 피해야 할 조합: 너무 다른 색상들의 무작위 조합
+   → reason 배열에 포함: "색상 조화: [구체적인 설명]"
 
 2. 스타일 통일감
    - 같은 스타일끼리 조합 우대
    - 예: 캐주얼+캐주얼, 포멀+포멀
    - 서로 다른 스타일은 신중하게
+   → reason 배열에 포함: "스타일 통일: [구체적인 설명]"
 
 3. 패턴 균형
    - 패턴 2개 이상 섞을 때 조심
    - 무지+패턴이 가장 좋음
    - 패턴의 크기나 색감이 다르면 피해야 함
+   → reason 배열에 포함: "패턴 균형: [구체적인 설명]"
 
 4. 격식도
    - 모든 항목의 격식도가 비슷해야 함
@@ -214,6 +219,9 @@ ${clothingList}${savedCombinationsInfo}
 6. 용도 조화
    - 같은 용도 항목 우대
 
+⚠️ reason 배열 형식:
+["색상 조화: 검정과 흰색의 모노톤 조합으로 세련된 분위기", "스타일 통일: 캐주얼한 상의와 하의의 완벽한 조화", "패턴 균형: 무지 패턴으로 깔끔한 룩 완성"]
+
 응답은 반드시 다음 JSON 형식이어야 합니다:
 {
   "recommendations": [
@@ -223,7 +231,7 @@ ${Array.from({ length: count }, (_, i) => {
       "rank": ${rank},
       "combination": ["옷이름1", "옷이름2", "옷이름3"],
       "score": ${(10 - rank * 0.5).toFixed(1)},
-      "reason": "이유 설명 (색상 조화, 스타일 통일감, 패턴 균형 등을 구체적으로)"
+      "reason": ["색상 조화: 구체적인 설명", "스타일 통일감: 구체적인 설명", "패턴 균형: 구체적인 설명"]
     }${i < count - 1 ? ',' : ''}`;
 }).join('\n')}
   ]
@@ -270,7 +278,10 @@ ${Array.from({ length: count }, (_, i) => {
                       items: { type: Type.STRING },
                     },
                     score: { type: Type.NUMBER },
-                    reason: { type: Type.STRING },
+                    reason: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                    },
                   },
                   required: ['rank', 'combination', 'score', 'reason'],
                 },
