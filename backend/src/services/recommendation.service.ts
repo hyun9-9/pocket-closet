@@ -33,22 +33,32 @@ export class RecommendationService {
         );
       }
 
-      // 2️⃣ AI 프롬프트 생성
-      const prompt = this.generateRecommendationPrompt(clothes, validatedCount);
+      // 2️⃣ 저장된 조합 먼저 조회 (AI 프롬프트에 포함할 정보)
+      const savedCombinations = await CombinationService.getUniqueCombinations(userId);
+      const savedCombinationsList = Array.from(savedCombinations);
 
-      // 3️⃣ Google Gemini AI로 추천 생성
-      const recommendations = await this.generateRecommendationsWithAI(prompt);
-
-      // 4️⃣ 의류 ID로 매핑
-      const mappedRecommendations = this.mapClothingIds(recommendations, clothes);
-
-      // 5️⃣ 저장된 조합 필터링 (이미 저장된 조합 제외)
-      const filteredRecommendations = await this.filterSavedCombinations(
-        userId,
-        mappedRecommendations
+      // 3️⃣ AI 프롬프트 생성 (저장된 조합 정보 포함)
+      const prompt = this.generateRecommendationPrompt(
+        clothes,
+        validatedCount,
+        savedCombinationsList
       );
 
-      // 6️⃣ 요청한 개수만큼 반환
+      // 4️⃣ Google Gemini AI로 추천 생성
+      const recommendations = await this.generateRecommendationsWithAI(prompt);
+
+      console.log(recommendations);
+      // 5️⃣ 의류 ID로 매핑
+      const mappedRecommendations = this.mapClothingIds(recommendations, clothes);
+
+      // 6️⃣ 이중 안전 장치: AI가 놓친 경우를 대비한 필터링
+      const filteredRecommendations = await this.filterSavedCombinations(
+        userId,
+        mappedRecommendations,
+        savedCombinations
+      );
+
+      // 7️⃣ 요청한 개수만큼 반환
       const slicedRecommendations = filteredRecommendations.slice(0, validatedCount);
 
       return {
@@ -127,11 +137,17 @@ export class RecommendationService {
   /**
    * AI 프롬프트 생성
    * 옷 데이터를 정리해서 AI에게 보낼 프롬프트 작성
+   * ✨ 개선: 저장된 조합을 프롬프트에 포함하여 AI가 다른 조합을 생성하도록 유도
    *
    * @param clothes 의류 배열
    * @param count 요청한 추천 개수
+   * @param savedCombinations 이미 저장된 조합 목록 (정규화된 형태)
    */
-  private static generateRecommendationPrompt(clothes: any[], count: number): string {
+  private static generateRecommendationPrompt(
+    clothes: any[],
+    count: number,
+    savedCombinations: string[] = []
+  ): string {
     const clothingList = clothes
       .map(
         (c, idx) =>
@@ -139,13 +155,37 @@ export class RecommendationService {
       )
       .join('\n');
 
+    // 저장된 조합을 사람이 읽을 수 있는 형태로 변환
+    let savedCombinationsInfo = '';
+    if (savedCombinations.length > 0) {
+      const clothingMap = new Map(clothes.map((c) => [c.id, c.name]));
+      const savedCombinationsList = savedCombinations
+        .map((combo, idx) => {
+          const clothingIds = combo.split(',');
+          const names = clothingIds
+            .map((id) => clothingMap.get(id) || `ID:${id}`)
+            .join(' + ');
+          return `   ${idx + 1}. ${names}`;
+        })
+        .join('\n');
+
+      savedCombinationsInfo = `
+
+【이미 저장된 조합 (피해야 함)】
+${savedCombinationsList}
+
+⚠️ 위의 저장된 조합과 동일한 의류 조합은 추천하지 마세요!
+   정확히 같은 의류의 조합이면 추천 목록에서 제외해주세요.
+   (예: "검정 후드집업 + 청 바지 + 검정 스니커즈" 같은 조합은 피하세요)`;
+    }
+
     const prompt = `
 당신은 국제적 패션 스타일리스트입니다.
 
 다음 사용자의 옷장 데이터를 분석해서 최고의 스타일링 조합 ${count}가지를 추천해주세요.
 
 【사용자 옷장】
-${clothingList}
+${clothingList}${savedCombinationsInfo}
 
 【평가 기준】
 1. 색상 조화
@@ -287,22 +327,27 @@ ${Array.from({ length: count }, (_, i) => {
   }
 
   /**
-   * 저장된 조합 필터링
-   * 이미 저장된 조합은 추천 목록에서 제외
+   * 저장된 조합 필터링 (이중 안전 장치)
+   * AI가 놓친 경우를 대비한 최종 필터링
    *
    * @param userId 사용자 ID
    * @param recommendations 추천 조합 배열
+   * @param savedCombinations 이미 조회한 저장된 조합 Set
    * @returns 저장되지 않은 조합만 필터링된 배열
    */
   private static async filterSavedCombinations(
     userId: string,
-    recommendations: any[]
+    recommendations: any[],
+    savedCombinations?: Set<string>
   ): Promise<any[]> {
     try {
-      // 1️⃣ 사용자의 저장된 조합 조회
-      const savedCombinations = await CombinationService.getUniqueCombinations(userId);
+      // 저장된 조합 조회 (이미 있으면 재사용)
+      let combinationsSet = savedCombinations;
+      if (!combinationsSet) {
+        combinationsSet = await CombinationService.getUniqueCombinations(userId);
+      }
 
-      // 2️⃣ 추천 조합 필터링
+      // 추천 조합 필터링
       const filtered = recommendations.filter((rec: any) => {
         // 추천 조합의 의류 ID 추출
         const clothingIds = rec.combination
@@ -313,7 +358,13 @@ ${Array.from({ length: count }, (_, i) => {
         const normalizedRec = clothingIds.sort().join(',');
 
         // 저장된 조합에 이미 있는지 확인
-        return !savedCombinations.has(normalizedRec);
+        const isDuplicate = combinationsSet!.has(normalizedRec);
+
+        if (isDuplicate) {
+          console.log(`[중복 필터링] 이미 저장된 조합: ${normalizedRec}`);
+        }
+
+        return !isDuplicate;
       });
 
       return filtered;
