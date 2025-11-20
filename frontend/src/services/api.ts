@@ -119,6 +119,64 @@ class ApiClient {
     const res = await this.client.get(`/recommendations/style${queryString}`);
     return res.data;
   }
+
+  // 조합 저장
+  async saveRecommendation(payload: {
+    recommendationRank: number;
+    recommendationScore: number;
+    combinationItems: Array<{ clothingId: string; layer: number }>;
+    occasion: string;
+    season?: string;
+    name?: string;
+    description?: string;
+  }) {
+    const res = await this.client.post('/recommendations/save', payload);
+    return res.data;
+  }
+
+  // 저장된 조합 조회
+  async getCombinations(filters?: {
+    isAiRecommended?: boolean;
+    occasion?: string;
+    season?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const params = new URLSearchParams();
+
+    if (filters?.isAiRecommended !== undefined) {
+      params.append('isAiRecommended', String(filters.isAiRecommended));
+    }
+    if (filters?.occasion) params.append('occasion', filters.occasion);
+    if (filters?.season) params.append('season', filters.season);
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.offset) params.append('offset', filters.offset.toString());
+
+    const queryString = params.toString();
+    const url = queryString ? `/combinations?${queryString}` : '/combinations';
+
+    const res = await this.client.get(url);
+    return res.data;
+  }
+
+  // 조합 평가 저장
+  async updateCombinationRating(
+    combinationId: string,
+    rating: number,
+    feedback?: string
+  ) {
+    const res = await this.client.patch(`/combinations/${combinationId}/rate`, {
+      rating,
+      feedback,
+    });
+    return res.data;
+  }
+
+  // 조합 삭제
+  async deleteCombination(combinationId: string) {
+    const res = await this.client.delete(`/combinations/${combinationId}`);
+    return res.data;
+  }
 }
 
 export { ApiClient };

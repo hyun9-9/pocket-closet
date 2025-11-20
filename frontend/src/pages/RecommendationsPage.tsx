@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { AxiosError } from 'axios';
 import { apiClient } from '../services/api';
+import { RecommendationCountSelector } from './RecommendationCountSelector';
 
 /**
  * RecommendationsPage 컴포넌트
  *
  * ✅ 기능:
- * 1. AI 생성 의류 조합 표시 (그리드)
- * 2. 각 조합의 AI 설명 표시
- * 3. 별점 평가 시스템 (1-5점)
- * 4. 추천 다시 생성 버튼
- * 5. 추천 개수 선택
+ * 1. 2단계 UI:
+ *    - 단계 1️⃣: RecommendationCountSelector에서 개수 선택
+ *    - 단계 2️⃣: 선택 후 추천 결과 표시
+ * 2. AI 생성 의류 조합 표시 (그리드)
+ * 3. 각 조합의 AI 설명 표시
+ * 4. 별점 평가 시스템 (1-5점)
+ * 5. 추천 다시 생성 버튼
  * 6. 로딩 상태 표시
  * 7. 에러 처리
  *
@@ -20,6 +23,7 @@ import { apiClient } from '../services/api';
  * - 이미지 표시
  * - 별점 UI
  * - 로딩/에러 처리
+ * - 2단계 UI 플로우
  */
 
 interface ClothingItem {
@@ -54,6 +58,7 @@ interface ClothingMap {
 
 export function RecommendationsPage() {
   // 📍 상태 관리
+  const [step, setStep] = useState<'select' | 'result'>('select'); // 1️⃣ 선택 단계 추가
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [clothingMap, setClothingMap] = useState<ClothingMap>({});
   const [loading, setLoading] = useState(false);
@@ -61,9 +66,10 @@ export function RecommendationsPage() {
   const [recommendationCount, setRecommendationCount] = useState(1);
   const [ratings, setRatings] = useState<{ [key: number]: number }>({});
 
-  // 📍 초기 로드
+  // 📍 초기 로드 제거 - 사용자가 개수 선택할 때까지 대기
   useEffect(() => {
-    loadRecommendations();
+    // 페이지 로드 시 아무것도 하지 않음
+    // handleCountSelect에서만 loadRecommendations 호출
   }, []);
 
   /**
@@ -123,10 +129,21 @@ export function RecommendationsPage() {
   };
 
   /**
-   * 추천 개수 변경
+   * 개수 선택 처리 (첫 진입 시)
+   * 2️⃣ 새로운 함수 - 선택 단계에서 결과 단계로 전환
+   */
+  const handleCountSelect = async (count: number) => {
+    setRecommendationCount(count);
+    setStep('result'); // 결과 단계로 전환
+    await loadRecommendations(count);
+  };
+
+  /**
+   * 추천 개수 변경 (결과 화면에서)
    */
   const handleCountChange = async (count: number) => {
     setRecommendationCount(count);
+    // 새로운 개수로 추천 다시 로드
     await loadRecommendations(count);
   };
 
@@ -138,8 +155,55 @@ export function RecommendationsPage() {
       ...ratings,
       [rankIndex]: rating,
     });
-    // TODO: 별점을 서버에 저장할 때 구현
     console.log(`추천 ${rankIndex + 1} 평점: ${rating}점`);
+  };
+
+  /**
+   * 조합 저장
+   */
+  const handleSaveCombination = async (rec: Recommendation) => {
+    try {
+      setLoading(true);
+
+      // 의류 레이어 정보 생성 (순서 기반)
+      const combinationItems = rec.combination.map((item, index) => ({
+        clothingId: item.id,
+        layer: index + 1,
+      }));
+
+      // 저장 API 호출
+      const result = await apiClient.saveRecommendation({
+        recommendationRank: rec.rank,
+        recommendationScore: rec.score,
+        combinationItems,
+        occasion: '일반', // TODO: 사용자가 선택한 용도로 변경 필요
+        season: undefined, // TODO: 계절 정보 추가 필요
+        name: undefined, // 자동 생성되도록 함
+        description: rec.reason, // AI 설명을 description으로 사용
+      });
+
+      // 성공 메시지 (data 필드가 없을 수도 있으므로 안전하게 처리)
+      const savedName = result.data?.name || result.data?.id || '저장된 조합';
+      alert(`조합이 저장되었습니다: ${savedName}`);
+      console.log('저장된 조합:', result.data || result);
+    } catch (error) {
+      const axiosError = error as AxiosError<any>;
+      const errorMessage = axiosError.response?.data?.message || '조합 저장 실패';
+
+      // 중복 저장 에러 메시지 처리
+      if (
+        errorMessage.includes('이미 저장된') ||
+        axiosError.response?.data?.code === 'COMBINATION_ALREADY_SAVED'
+      ) {
+        alert('이미 저장된 조합입니다!');
+      } else {
+        alert(`오류: ${errorMessage}`);
+      }
+
+      console.error('조합 저장 오류:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
@@ -229,7 +293,17 @@ export function RecommendationsPage() {
     );
   };
 
-  // 📍 로딩 상태
+  // 📍 1️⃣ 선택 단계 - RecommendationCountSelector 표시
+  if (step === 'select') {
+    return (
+      <RecommendationCountSelector
+        onSelect={handleCountSelect}
+        isLoading={loading}
+      />
+    );
+  }
+
+  // 📍 로딩 상태 (결과 단계에서)
   if (loading && recommendations.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -241,13 +315,24 @@ export function RecommendationsPage() {
     );
   }
 
+  // 📍 2️⃣ 결과 단계 - 추천 결과 표시
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* 헤더 */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">스타일 추천</h1>
-          <p className="text-gray-600">AI가 당신의 옷장을 분석해 최고의 조합을 추천합니다</p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">스타일 추천</h1>
+            <p className="text-gray-600">AI가 당신의 옷장을 분석해 최고의 조합을 추천합니다</p>
+          </div>
+          {/* 뒤로가기 버튼 */}
+          <button
+            onClick={() => setStep('select')}
+            className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition"
+            title="개수 선택 화면으로 돌아가기"
+          >
+            ← 다시 선택
+          </button>
         </div>
 
         {/* 제어 패널 */}
@@ -336,15 +421,29 @@ export function RecommendationsPage() {
 
                   {/* 평가 섹션 */}
                   <div className="border-t border-gray-200 pt-6">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
-                      이 조합은 어떤가요?
-                    </label>
-                    {renderStars(recIndex)}
-                    {ratings[recIndex] && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        {ratings[recIndex]}점을 평가했습니다
-                      </p>
-                    )}
+                    <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between">
+                      <div className="flex-1">
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          이 조합은 어떤가요?
+                        </label>
+                        {renderStars(recIndex)}
+                        {ratings[recIndex] && (
+                          <p className="text-sm text-gray-600 mt-2">
+                            {ratings[recIndex]}점을 평가했습니다
+                          </p>
+                        )}
+                      </div>
+
+                      {/* 저장 버튼 */}
+                      <button
+                        onClick={() => handleSaveCombination(rec)}
+                        disabled={loading}
+                        className="px-6 py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        title="이 조합을 저장하기"
+                      >
+                        💾 저장하기
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
