@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { UploadPage } from './pages/UploadPage';
 import { WardrobePage } from './pages/WardrobePage';
 import { RecommendationsPage } from './pages/RecommendationsPage';
+import { SavedCombinationsPage } from './pages/SavedCombinationsPage';
 
 /**
  * App.tsx - 루트 컴포넌트
@@ -104,6 +105,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <RecommendationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/combinations"
+          element={
+            <ProtectedRoute>
+              <SavedCombinationsPage />
             </ProtectedRoute>
           }
         />

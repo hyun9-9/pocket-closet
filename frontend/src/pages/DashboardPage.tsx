@@ -134,6 +134,27 @@ export function DashboardPage() {
             </div>
           </div>
 
+          {/* 💾 저장된 조합 */}
+          <div
+            onClick={() => handleNavigate('/combinations')}
+            className="bg-white rounded-lg shadow-md hover:shadow-lg transition cursor-pointer overflow-hidden group"
+          >
+            <div className="bg-pink-50 p-8 group-hover:bg-pink-100 transition text-center">
+              <div className="text-4xl mb-2">💾</div>
+              <h3 className="font-semibold text-pink-900 text-lg mb-2">
+                저장된 조합
+              </h3>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-gray-600 mb-4">
+                저장한 스타일 조합을 관리하고 평가합니다
+              </p>
+              <button className="w-full bg-pink-500 hover:bg-pink-600 text-white py-2 rounded-md transition font-medium">
+                조합 보기
+              </button>
+            </div>
+          </div>
+
           {/* ⚙️ 설정 */}
           <div
             onClick={() => handleNavigate('/settings')}
