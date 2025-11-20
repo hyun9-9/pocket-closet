@@ -171,6 +171,11 @@ export function RecommendationsPage() {
         layer: index + 1,
       }));
 
+      // reason을 문자열로 변환 (배열이면 줄바꿈으로 연결)
+      const reasonText = Array.isArray(rec.reason)
+        ? rec.reason.join('\n')
+        : rec.reason;
+
       // 저장 API 호출
       const result = await apiClient.saveRecommendation({
         recommendationRank: rec.rank,
@@ -179,7 +184,7 @@ export function RecommendationsPage() {
         occasion: '일반', // TODO: 사용자가 선택한 용도로 변경 필요
         season: undefined, // TODO: 계절 정보 추가 필요
         name: undefined, // 자동 생성되도록 함
-        description: rec.reason, // AI 설명을 description으로 사용
+        description: reasonText, // AI 설명을 description으로 사용 (배열이면 줄바꿈으로 연결)
       });
 
       // 성공 메시지 (data 필드가 없을 수도 있으므로 안전하게 처리)
