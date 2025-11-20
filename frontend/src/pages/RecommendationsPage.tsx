@@ -37,7 +37,7 @@ interface ClothingItem {
 interface Recommendation {
   rank: number;
   score: number;
-  reason: string;
+  reason: string | string[]; // 문자열 또는 배열 모두 지원
   combination: ClothingItem[];
 }
 
@@ -171,6 +171,11 @@ export function RecommendationsPage() {
         layer: index + 1,
       }));
 
+      // reason을 문자열로 변환 (배열이면 줄바꿈으로 연결)
+      const reasonText = Array.isArray(rec.reason)
+        ? rec.reason.join('\n')
+        : rec.reason;
+
       // 저장 API 호출
       const result = await apiClient.saveRecommendation({
         recommendationRank: rec.rank,
@@ -179,7 +184,7 @@ export function RecommendationsPage() {
         occasion: '일반', // TODO: 사용자가 선택한 용도로 변경 필요
         season: undefined, // TODO: 계절 정보 추가 필요
         name: undefined, // 자동 생성되도록 함
-        description: rec.reason, // AI 설명을 description으로 사용
+        description: reasonText, // AI 설명을 description으로 사용 (배열이면 줄바꿈으로 연결)
       });
 
       // 성공 메시지 (data 필드가 없을 수도 있으므로 안전하게 처리)
@@ -409,7 +414,20 @@ export function RecommendationsPage() {
 
                   {/* AI 설명 */}
                   <div className="bg-white rounded-lg p-4">
-                    <p className="text-gray-700 text-sm leading-relaxed">{rec.reason}</p>
+                    {Array.isArray(rec.reason) ? (
+                      <div className="space-y-2">
+                        {rec.reason.map((reason, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <span className="text-blue-500 font-bold">•</span>
+                            <p className="text-gray-700 text-sm leading-relaxed flex-1">
+                              {reason}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 text-sm leading-relaxed">{rec.reason}</p>
+                    )}
                   </div>
                 </div>
 

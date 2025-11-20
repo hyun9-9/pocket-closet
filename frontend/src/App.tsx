@@ -7,6 +7,7 @@ import { UploadPage } from './pages/UploadPage';
 import { WardrobePage } from './pages/WardrobePage';
 import { RecommendationsPage } from './pages/RecommendationsPage';
 import { SavedCombinationsPage } from './pages/SavedCombinationsPage';
+import { CombinationDetailPage } from './pages/CombinationDetailPage';
 
 /**
  * App.tsx - 루트 컴포넌트
@@ -113,6 +114,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <SavedCombinationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/combinations/:id"
+          element={
+            <ProtectedRoute>
+              <CombinationDetailPage />
             </ProtectedRoute>
           }
         />
