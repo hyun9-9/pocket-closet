@@ -225,6 +225,10 @@ model StyleCombination {
   // AI 추천 여부
   isAiRecommended Boolean @default(false)
 
+  // 🔥 추가: 저장 정보
+  savedAt     DateTime? // 저장한 시간 (null이면 아직 임시)
+  originalRecommendationRank Int? // 원래 추천 순위 (1,2,3,4,5 등)
+
   // 평점 & 피드백
   rating      Float? // 1-5
   feedback    String? // 사용자 피드백
@@ -240,6 +244,8 @@ model StyleCombination {
   items       CombinationItem[]
 
   @@index([userId])
+  @@index([userId, isAiRecommended])
+  @@index([userId, savedAt])
   @@map("style_combinations")
 }
 
