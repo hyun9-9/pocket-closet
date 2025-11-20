@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import { apiClient } from '../services/api';
 
@@ -56,6 +57,8 @@ interface PaginationInfo {
 }
 
 export function SavedCombinationsPage() {
+  const navigate = useNavigate();
+
   // 📍 상태 관리
   const [combinations, setCombinations] = useState<SavedCombination[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
@@ -207,7 +210,11 @@ export function SavedCombinationsPage() {
     const isEditing = editingRating === combo.id;
 
     return (
-      <div key={combo.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
+      <div
+        key={combo.id}
+        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer"
+        onClick={() => navigate(`/combinations/${combo.id}`)}
+      >
         {/* 이미지 그리드 */}
         <div className="grid grid-cols-3 gap-1 h-40 bg-gray-200">
           {combo.items.slice(0, 3).map((item) => (
