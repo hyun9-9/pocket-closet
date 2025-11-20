@@ -18,7 +18,7 @@ const upload = multer({
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('JPG, PNG, WebP 형식만 지원합니다'));
+      cb(new Error('JPG, JPEG, PNG, WebP 형식만 지원합니다'));
     }
   },
 });

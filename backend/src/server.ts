@@ -13,6 +13,9 @@ import { errorHandler } from './middleware/error.middleware';
 // 설정
 import { connectDatabase } from './config/database';
 
+// 서비스
+import { CategoryService } from './services/category.service';
+
 dotenv.config();
 
 const app: Application = express();
@@ -66,6 +69,9 @@ const startServer = async () => {
     // 데이터베이스 연결
     await connectDatabase();
     console.log('✅ Database connected');
+
+    // 기본 카테고리 초기화 (처음 한 번만 실행됨)
+    await CategoryService.initializeDefaultCategories();
 
     // 서버 시작
     app.listen(PORT, () => {

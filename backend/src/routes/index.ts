@@ -3,7 +3,9 @@ import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth.middleware';
 import authRoutes from './auth.routes';
 import clothingRoutes from './clothing.routes';
+import categoryRoutes from './category.routes';
 import recommendationRoutes from './recommendation.routes';
+import combinationRoutes from './combination.routes';
 
 const router = Router();
 
@@ -14,7 +16,9 @@ router.get('/health', (req, res) => {
 
 // 라우트 추가
 router.use('/auth', authRoutes);
+router.use('/categories', categoryRoutes); // 카테고리 (공개, 인증 불필요)
 router.use('/clothing', clothingRoutes);
 router.use('/recommendations', authenticateToken, recommendationRoutes);
+router.use('/combinations', authenticateToken, combinationRoutes);
 
 export default router;
