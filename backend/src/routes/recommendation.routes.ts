@@ -101,4 +101,90 @@ const router = Router();
  */
 router.get('/style', authenticateToken, RecommendationController.getStyleRecommendations);
 
+/**
+ * POST /api/recommendations/save
+ * AI 추천 조합을 저장된 조합으로 변환
+ *
+ * 사용자가 추천받은 조합을 선택해서 저장할 때 호출합니다.
+ * 자동으로 중복 검사를 수행하고, 같은 조합이 이미 저장되어 있으면 에러를 반환합니다.
+ *
+ * Headers:
+ * Authorization: Bearer {token}
+ *
+ * Body:
+ * {
+ *   "recommendationRank": 1,              // 추천 순위 (1,2,3,...)
+ *   "recommendationScore": 9.5,           // AI 평가 점수 (0-10)
+ *   "combinationItems": [
+ *     {"clothingId": "uuid", "layer": 1}, // 레이어 순서
+ *     {"clothingId": "uuid", "layer": 2},
+ *     {"clothingId": "uuid", "layer": 3}
+ *   ],
+ *   "occasion": "데이트",                 // 필수: 용도
+ *   "season": "봄",                       // 선택: 계절
+ *   "name": "로맨틱 룩",                   // 선택: 조합 이름 (없으면 자동생성)
+ *   "description": "봄 데이트에 어울리는 로맨틱한 스타일" // 선택: 설명
+ * }
+ *
+ * 성공 응답 (201 Created):
+ * {
+ *   "success": true,
+ *   "message": "조합이 저장되었습니다",
+ *   "data": {
+ *     "id": "combo-uuid",
+ *     "userId": "user-uuid",
+ *     "name": "로맨틱 룩 #1234567890",
+ *     "occasion": "데이트",
+ *     "season": "봄",
+ *     "isAiRecommended": true,
+ *     "savedAt": "2025-11-20T10:30:00Z",
+ *     "originalRecommendationRank": 1,
+ *     "rating": null,
+ *     "items": [
+ *       {
+ *         "clothingId": "uuid",
+ *         "name": "핑크 블라우스",
+ *         "primaryColor": "핑크",
+ *         "pattern": "무지",
+ *         "style": ["로맨틱"],
+ *         "layer": 1
+ *       },
+ *       ...
+ *     ]
+ *   }
+ * }
+ *
+ * 에러 응답 (400 Bad Request) - 조합 이미 저장됨:
+ * {
+ *   "success": false,
+ *   "message": "이미 저장된 조합입니다",
+ *   "code": "COMBINATION_ALREADY_SAVED"
+ * }
+ *
+ * 에러 응답 (400 Bad Request) - 유효하지 않은 데이터:
+ * {
+ *   "success": false,
+ *   "message": "조합에 포함될 의류가 필요합니다"
+ * }
+ *
+ * 에러 응답 (404 Not Found) - 의류 찾을 수 없음:
+ * {
+ *   "success": false,
+ *   "message": "의류 {id}를 찾을 수 없습니다"
+ * }
+ *
+ * 에러 응답 (401 Unauthorized):
+ * {
+ *   "success": false,
+ *   "message": "인증이 필요합니다"
+ * }
+ *
+ * 에러 응답 (500 Internal Server Error):
+ * {
+ *   "success": false,
+ *   "message": "조합 저장 중 오류가 발생했습니다"
+ * }
+ */
+router.post('/save', authenticateToken, RecommendationController.saveRecommendation);
+
 export default router;

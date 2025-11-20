@@ -2,6 +2,7 @@
 import { PrismaClient } from '@prisma/client';
 import { GoogleGenAI, Type } from '@google/genai';
 import { CustomError } from '../middleware/error.middleware';
+import { CombinationService } from './combination.service';
 
 const prisma = new PrismaClient();
 const apiKey = process.env.GOOGLE_AI_API_KEY;
@@ -10,6 +11,8 @@ export class RecommendationService {
   /**
    * 스타일 추천 생성
    * 사용자의 옷 데이터를 분석해서 최고의 조합 추천
+   *
+   * ✨ 개선사항: 이미 저장된 조합은 자동으로 제외
    *
    * @param userId 사용자 ID
    * @param count 추천 개수 (기본값: 1, 최대: 10)
@@ -39,8 +42,14 @@ export class RecommendationService {
       // 4️⃣ 의류 ID로 매핑
       const mappedRecommendations = this.mapClothingIds(recommendations, clothes);
 
-      // 5️⃣ 요청한 개수만큼 반환
-      const slicedRecommendations = mappedRecommendations.slice(0, validatedCount);
+      // 5️⃣ 저장된 조합 필터링 (이미 저장된 조합 제외)
+      const filteredRecommendations = await this.filterSavedCombinations(
+        userId,
+        mappedRecommendations
+      );
+
+      // 6️⃣ 요청한 개수만큼 반환
+      const slicedRecommendations = filteredRecommendations.slice(0, validatedCount);
 
       return {
         totalClothes: clothes.length,
@@ -275,5 +284,43 @@ ${Array.from({ length: count }, (_, i) => {
         combination: combinationWithIds,
       };
     });
+  }
+
+  /**
+   * 저장된 조합 필터링
+   * 이미 저장된 조합은 추천 목록에서 제외
+   *
+   * @param userId 사용자 ID
+   * @param recommendations 추천 조합 배열
+   * @returns 저장되지 않은 조합만 필터링된 배열
+   */
+  private static async filterSavedCombinations(
+    userId: string,
+    recommendations: any[]
+  ): Promise<any[]> {
+    try {
+      // 1️⃣ 사용자의 저장된 조합 조회
+      const savedCombinations = await CombinationService.getUniqueCombinations(userId);
+
+      // 2️⃣ 추천 조합 필터링
+      const filtered = recommendations.filter((rec: any) => {
+        // 추천 조합의 의류 ID 추출
+        const clothingIds = rec.combination
+          .map((item: any) => item.id)
+          .filter((id: any) => id !== null);
+
+        // 정규화
+        const normalizedRec = clothingIds.sort().join(',');
+
+        // 저장된 조합에 이미 있는지 확인
+        return !savedCombinations.has(normalizedRec);
+      });
+
+      return filtered;
+    } catch (error) {
+      // 필터링 실패 시 에러 로깅 후 원본 반환 (안전 장치)
+      console.error('저장된 조합 필터링 중 오류:', error);
+      return recommendations;
+    }
   }
 }
